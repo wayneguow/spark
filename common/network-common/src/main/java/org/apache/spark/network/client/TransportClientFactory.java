@@ -114,8 +114,8 @@ public class TransportClientFactory implements Closeable {
         conf.clientThreads(),
         conf.getModuleName() + "-client");
     if (conf.sharedByteBufAllocators()) {
-      this.pooledAllocator = NettyUtils.getSharedPooledByteBufAllocator(
-          conf.preferDirectBufsForSharedByteBufAllocators(), false /* allowCache */);
+      this.pooledAllocator = NettyUtils.getClientSharedPooledByteBufAllocator(
+          conf.preferDirectBufsForSharedByteBufAllocators());
     } else {
       this.pooledAllocator = NettyUtils.createPooledByteBufAllocator(
           conf.preferDirectBufs(), false /* allowCache */, conf.clientThreads());

@@ -49,8 +49,8 @@ public class NettyUtils {
    */
   private static int MAX_DEFAULT_NETTY_THREADS = 8;
 
-  private static final PooledByteBufAllocator[] _sharedPooledByteBufAllocator =
-      new PooledByteBufAllocator[2];
+  private static volatile PooledByteBufAllocator _serverSharedPooledByteBufAllocator;
+  private static volatile PooledByteBufAllocator _clientSharedPooledByteBufAllocator;
 
   public static long freeDirectMemory() {
     return PlatformDependent.maxDirectMemory() - PlatformDependent.usedDirectMemory();
@@ -118,21 +118,41 @@ public class NettyUtils {
   }
 
   /**
-   * Returns the lazily created shared pooled ByteBuf allocator for the specified allowCache
-   * parameter value.
+   * Returns the lazily created transport server shared pooled ByteBuf allocator
    */
-  public static synchronized PooledByteBufAllocator getSharedPooledByteBufAllocator(
-      boolean allowDirectBufs,
-      boolean allowCache) {
-    final int index = allowCache ? 0 : 1;
-    if (_sharedPooledByteBufAllocator[index] == null) {
-      _sharedPooledByteBufAllocator[index] =
-        createPooledByteBufAllocator(
-          allowDirectBufs,
-          allowCache,
-          defaultNumThreads(0));
+  public static PooledByteBufAllocator getServerSharedPooledByteBufAllocator(
+          boolean allowDirectBufs) {
+    if (_serverSharedPooledByteBufAllocator == null) {
+      synchronized (_serverSharedPooledByteBufAllocator) {
+        if (_serverSharedPooledByteBufAllocator == null) {
+          _serverSharedPooledByteBufAllocator =
+                  createPooledByteBufAllocator(
+                          allowDirectBufs,
+                          true,
+                          defaultNumThreads(0));
+        }
+      }
     }
-    return _sharedPooledByteBufAllocator[index];
+    return _serverSharedPooledByteBufAllocator;
+  }
+
+  /**
+   * Returns the lazily created transport client shared pooled ByteBuf allocator
+   */
+  public static PooledByteBufAllocator getClientSharedPooledByteBufAllocator(
+          boolean allowDirectBufs) {
+    if (_clientSharedPooledByteBufAllocator == null) {
+      synchronized (_clientSharedPooledByteBufAllocator) {
+        if (_clientSharedPooledByteBufAllocator != null) {
+          _clientSharedPooledByteBufAllocator =
+                  createPooledByteBufAllocator(
+                          allowDirectBufs,
+                          false,
+                          defaultNumThreads(0));
+        }
+      }
+    }
+    return _clientSharedPooledByteBufAllocator;
   }
 
   /**
